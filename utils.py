@@ -1,7 +1,9 @@
 import pandas as pd
-from typing import Dict, List
+import numpy as np
+from typing import Dict, List, Optional
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
 import re
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -32,7 +34,16 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def is_list(obj : pd.Series) -> bool:
-    return len(obj.values[0].split(';')) > 1
+    """Check if a column contains multi-select (semicolon-separated) values."""
+    # Get first non-null value
+    non_null = obj.dropna()
+    if non_null.empty:
+        return False
+    first_val = non_null.values[0]
+    # Check if it's a string before splitting
+    if not isinstance(first_val, str):
+        return False
+    return len(first_val.split(';')) > 1
 
 
 def get_info_dict(df : pd.DataFrame, names_col:str=None) -> dict:
@@ -196,13 +207,25 @@ def preprocessing(infos: Dict[str, Dict[str, pd.DataFrame]]) -> None:
         ohe_cols = simple_string_ohe(infos, info_data, simple_cols)
 
         # Concatena os DataFrames explodidos
-        exploded_df = pd.concat(exploded_dfs, axis=1)
+        if exploded_dfs:
+            exploded_df = pd.concat(exploded_dfs, axis=1)
+        else:
+            exploded_df = pd.DataFrame(index=info_data.index)
+
+        # Ensure all dataframes have the same index before concat
+        # Reset and re-align indices
+        base_idx = info_data.index
+        
+        if not exploded_df.empty:
+            exploded_df = exploded_df.reindex(base_idx).fillna(0)
+        if not ohe_cols.empty:
+            ohe_cols = ohe_cols.reindex(base_idx).fillna(0)
 
         # Concatena os DataFrames explodidos com os OneHotEncoded
         info_data = pd.concat([info_data, exploded_df, ohe_cols], axis=1)
 
         # Remove as colunas originais que foram processadas
-        info_data.drop(columns=infos['fields_cols'].copy(), inplace=True)
+        info_data.drop(columns=infos['fields_cols'].copy(), inplace=True, errors='ignore')
 
         info['fields'] = info_data
     
@@ -229,3 +252,159 @@ def split_dfs(df: pd.DataFrame, col:int, sexo: str="") -> Dict[str, pd.DataFrame
     """
 
     return {f"{sexo}_{opt}": v for opt, v in df.groupby(df.columns[col])}
+
+
+# ============================================================================
+# NEW FUNCTIONS FOR IMPROVED MATCHING
+# ============================================================================
+
+def compute_comment_similarity(
+    comments_a: List[str], 
+    comments_b: List[str],
+    index_a: Optional[List[str]] = None,
+    index_b: Optional[List[str]] = None
+) -> pd.DataFrame:
+    """
+    Computes TF-IDF based similarity between two sets of comments.
+    
+    Args:
+        comments_a: List of comments (e.g., from buddies)
+        comments_b: List of comments (e.g., from international students)
+        index_a: Optional index for rows
+        index_b: Optional index for columns
+        
+    Returns:
+        DataFrame with similarity scores (rows=comments_a, cols=comments_b)
+    """
+    # Clean comments - replace trivial ones with empty string
+    trivial = {'.', '/', '-', 'nan', '', 'n/a', 'na', 'none', '🥳'}
+    
+    def clean_comment(c: str) -> str:
+        if not c or pd.isna(c):
+            return ""
+        c_str = str(c).strip().lower()
+        return "" if c_str in trivial else c_str
+    
+    cleaned_a = [clean_comment(c) for c in comments_a]
+    cleaned_b = [clean_comment(c) for c in comments_b]
+    
+    # If all comments are empty, return zeros
+    all_comments = cleaned_a + cleaned_b
+    if all(c == "" for c in all_comments):
+        return pd.DataFrame(
+            np.zeros((len(comments_a), len(comments_b))),
+            index=index_a,
+            columns=index_b
+        )
+    
+    # TF-IDF vectorization
+    vectorizer = TfidfVectorizer(min_df=1, stop_words='english')
+    
+    try:
+        all_vectors = vectorizer.fit_transform(all_comments)
+        vectors_a = all_vectors[:len(comments_a)]
+        vectors_b = all_vectors[len(comments_a):]
+        
+        similarity = cosine_similarity(vectors_a, vectors_b)
+    except ValueError:
+        # If vectorization fails (e.g., all empty after stop words), return zeros
+        similarity = np.zeros((len(comments_a), len(comments_b)))
+    
+    return pd.DataFrame(similarity, index=index_a, columns=index_b)
+
+
+def compute_difference_score(
+    features_a: pd.DataFrame, 
+    features_b: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Computes how different two sets of feature vectors are.
+    Uses 1 - cosine_similarity to get a difference score.
+    
+    Args:
+        features_a: Feature matrix A (rows are individuals)
+        features_b: Feature matrix B (rows are individuals)
+        
+    Returns:
+        DataFrame with difference scores (0 = identical, 1 = completely different)
+    """
+    similarity = cosine_similarity(features_a, features_b)
+    difference = 1 - similarity
+    return pd.DataFrame(
+        difference,
+        index=features_a.index,
+        columns=features_b.index
+    )
+
+
+def compute_comfort_modifier(
+    buddy_features: pd.DataFrame,
+    student_features: pd.DataFrame,
+    buddy_comfort: pd.Series,
+    student_comfort: pd.Series,
+    similar_bonus: float = 0.1,
+    different_penalty: float = 0.1
+) -> pd.DataFrame:
+    """
+    Computes comfort-based modifiers based on "comfortable with different" preferences.
+    
+    Args:
+        buddy_features: Processed feature matrix for buddies
+        student_features: Processed feature matrix for students
+        buddy_comfort: Series with True/False for each buddy's comfort preference
+        student_comfort: Series with True/False for each student's comfort preference
+        similar_bonus: Bonus to apply when preferences align positively
+        different_penalty: Penalty when someone says "No" and is paired differently
+        
+    Returns:
+        DataFrame with modifier values (can be positive or negative)
+    """
+    # Compute difference score between buddies and students
+    diff_scores = compute_difference_score(buddy_features, student_features)
+    
+    # High difference threshold (above this = "very different")
+    diff_threshold = 0.5
+    
+    modifiers = pd.DataFrame(
+        np.zeros_like(diff_scores.values),
+        index=diff_scores.index,
+        columns=diff_scores.columns
+    )
+    
+    for buddy_name in diff_scores.index:
+        for student_name in diff_scores.columns:
+            diff = diff_scores.loc[buddy_name, student_name]
+            buddy_ok = buddy_comfort.get(buddy_name, True)
+            student_ok = student_comfort.get(student_name, True)
+            
+            if diff > diff_threshold:
+                # High difference pairing
+                if not student_ok or not buddy_ok:
+                    # Someone is uncomfortable with different → penalty
+                    modifiers.loc[buddy_name, student_name] = -different_penalty
+                elif student_ok and buddy_ok:
+                    # Both are comfortable with different → bonus (they'll enjoy diversity)
+                    modifiers.loc[buddy_name, student_name] = similar_bonus
+            else:
+                # Similar pairing - no modifier needed
+                pass
+    
+    return modifiers
+
+
+def compute_intra_group_similarity(features: pd.DataFrame) -> pd.DataFrame:
+    """
+    Computes similarity matrix within a single group (e.g., among international students).
+    
+    Args:
+        features: Feature matrix where rows are individuals
+        
+    Returns:
+        DataFrame with similarity scores (symmetric, diagonal = 1)
+    """
+    similarity = cosine_similarity(features, features)
+    return pd.DataFrame(
+        similarity,
+        index=features.index,
+        columns=features.index
+    )
