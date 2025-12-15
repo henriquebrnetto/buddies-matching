@@ -1,0 +1,87 @@
+Columns:
+  0: ID
+  1: Hora de início
+  2: Hora de conclusão
+  3: Email
+  4: Nome
+  5: Hora da última modificação
+  6: Tell us what's you name: 
+  7: I am a: 
+  8: What is your field of study?
+  9: What is your current level of study?
+  10: What languages do you speak fluently? (Select all that apply)
+  11: Have you participated in an exchange program before?
+  12: What are your goals in the Buddy Program? (Select up to 3)
+  13: How do you describe yourself socially?
+  14: Which of these best describes your approach to life?
+  15: Which statement fits you best?
+  16: Would you be comfortable being matched with someone very different from you (personality, habits, culture)?
+  17: What are your favorite activities or hobbies? (Select up to 5)
+  18: What is your preferred way to communicate with your buddy in a first moment?
+  19: Would you share your instagram @ and whats app number so we can share with your buddy? If yes, please, write It bellow:
+  20: Column
+  21: Comments
+
+Shape: (76, 22)
+
+First row sample:
+  ID: np.int64(1)
+  Hora de início: Timestamp('2025-12-09 19:17:50')
+  Hora de conclusão: Timestamp('2025-12-09 19:21:01')
+  Email: 'anonymous'
+  Nome: np.float64(nan)
+  Hora da última modificação: np.float64(nan)
+  Tell us what's you name: : 'Sully  Richard T Vanbellingen'
+  I am a: : 'International student (Incoming)'
+  What is your field of study?: '\xa0Business'
+  What is your current level of study?: '3rd year'
+  What languages do you speak fluently? (Select all that apply): 'French;English;'
+  Have you participated in an exchange program before?: 'No'
+  What are your goals in the Buddy Program? (Select up to 3): 'Make new friends;Practice languages;Learn about Brazilian culture;Share my own culture;Go out and have fun;Receive academic support;Networking;'
+  How do you describe yourself socially?: 'bit of both'
+  Which of these best describes your approach to life?: 'It depends on the situation'
+  Which statement fits you best?: 'I balance both equally'
+  Would you be comfortable being matched with someone very different from you (personality, habits, culture)?: 'Yes'
+  What are your favorite activities or hobbies? (Select up to 5): 'Music;Sports/fitness;Gaming;Watching movies or TV shows;'
+  What is your preferred way to communicate with your buddy in a first moment?: 'Instagram;WhatsApp;'
+  Would you share your instagram @ and whats app number so we can share with your buddy? If yes, please, write It bellow:: 'Ig: sully.vanb.  N• +32 0494 70 54 34 '
+  Column: 'I authorize the sharing of my personal contact information (phone number, e-mail, and Instagram) with my designated Buddy (Brazilian student from Insper), for the purpose of facilitating communication and integration."'
+  Comments: 'Thank you ! '
+
+
+Unique values per column:
+  ID: [np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+  Hora de início: [Timestamp('2025-12-09 19:17:50'), Timestamp('2025-12-09 19:20:47'), Timestamp('2025-12-09 19:21:22'), Timestamp('2025-12-09 19:21:36'), Timestamp('2025-12-09 19:21:34')]
+  Hora de conclusão: [Timestamp('2025-12-09 19:21:01'), Timestamp('2025-12-09 19:22:23'), Timestamp('2025-12-09 19:23:32'), Timestamp('2025-12-09 19:24:09'), Timestamp('2025-12-09 19:24:25')]
+  Email: ['anonymous']
+  Nome: []
+  Hora da última modificação: []
+  Tell us what's you name: : ['Sully  Richard T Vanbellingen', 'Lorenzo Martínez Malvar', 'Alaya Minet', 'Matisse Dupont', 'Beatriz Simon Witt Jaloreto']
+  I am a: : ['International student (Incoming)', 'Brazilian student (Buddy)']
+  What is your field of study?: ['\xa0Business', 'Economics', 'Law', 'Computer Science', 'Other']
+  What is your current level of study?: ['3rd year', '4th year or more', '2nd year', '1st year']
+  What languages do you speak fluently? (Select all that apply): ['French;English;', 'Portuguese;English;Spanish;', 'English;French;', 'English;Spanish;Portuguese;', 'Portuguese;English;']
+  Have you participated in an exchange program before?: ['No', 'Yes']
+  What are your goals in the Buddy Program? (Select up to 3): ['Make new friends;Practice languages;Learn about Brazilian culture;Share my own culture;Go out and have fun;Receive academic support;Networking;', 'Make new friends;Go out and have fun;Learn about Brazilian culture;', 'Make new friends;Learn about Brazilian culture;Go out and have fun;', 'Go out and have fun;Receive academic support;Make new friends;', 'Make new friends;Share my own culture;Practice languages;']
+  How do you describe yourself socially?: ['bit of both', 'Extrovert', 'Introvert']
+  Which of these best describes your approach to life?: ['It depends on the situation', 'I go with the flow', '\xa0I like to plan ahead']
+  Which statement fits you best?: ['I balance both equally', 'I’m more social-focused', 'I’m more academic-focused']
+  Would you be comfortable being matched with someone very different from you (personality, habits, culture)?: ['Yes', 'No']
+  What are your favorite activities or hobbies? (Select up to 5): ['Music;Sports/fitness;Gaming;Watching movies or TV shows;', 'Nightlife;Sports/fitness;', 'Music;Sports/fitness;Reading;\xa0Traveling;Nightlife;', 'Music;Sports/fitness;Hiking/outdoor activities;Nightlife;', 'Music;Watching movies or TV shows;Nightlife;\xa0Traveling;']
+  What is your preferred way to communicate with your buddy in a first moment?: ['Instagram;WhatsApp;', 'WhatsApp;', 'Instagram;', 'WhatsApp;Instagram;', 'All options above;']
+  Would you share your instagram @ and whats app number so we can share with your buddy? If yes, please, write It bellow:: ['Ig: sully.vanb.  N• +32 0494 70 54 34 ', '@lorenmartinezm', '@alllayaa', 'instagram: matisse_dupont     Whatsapp: 514-701-0568', '@bia.jaloreto +55 (11) 94305-1407']
+  Column: ['I authorize the sharing of my personal contact information (phone number, e-mail, and Instagram) with my designated Buddy (Brazilian student from Insper), for the purpose of facilitating communication and integration."']
+  Comments: ['Thank you ! ', '/', '🥳', '.', "We'll have an incredible year!"]
+
+
+Comments column (if exists):
+  0: Thank you ! 
+  1: /
+  2: 🥳
+  3: .
+  4: .
+  5: .
+  6: We'll have an incredible year!
+  7: Bora 2026
+  8: I'd love to meet with people who like to talk (in English?) about deep things, as it's probably what I like the most to do in life
+  9: Very excited to be a part of this project!
