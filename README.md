@@ -7,36 +7,100 @@ Sistema de matching otimizado para o Programa Buddy, que conecta estudantes bras
 ```
 buddies-matching/
 ├── match_improved.py      # Script principal de matching
-├── match.py               # Script legado (versão antiga)
-├── utils.py               # Funções utilitárias de processamento
+├── match.py                # Script legado (versão antiga)
+├── utils.py                 # Funções utilitárias de processamento
+├── debug.py                # Inspeciona colunas/abas de um .xlsx já separado
 ├── classes/
-│   ├── optimizer.py       # Otimizador legado
+│   ├── optimizer.py        # Otimizador legado
 │   └── improved_optimizer.py  # Otimizador melhorado
 ├── models/
-│   ├── config.py          # Configurações do matching
-│   └── person.py          # Classe Person
-├── scripts/               # Scripts auxiliares
-│   ├── split_by_gender.py # Separar dados por gênero
-│   ├── run_split.py       # Script rápido de separação
-│   └── analyze.py         # Análise dos dados
+│   ├── config.py           # Configurações do matching
+│   └── person.py           # Classe Person
+├── scripts/                 # Scripts auxiliares
+│   ├── explore_data.py     # Explora a estrutura do arquivo bruto (respostas do form)
+│   ├── split_by_gender.py  # Separar dados por gênero (flexível, com --name-column etc.)
+│   ├── run_split.py        # Script rápido de separação (descobre o .xlsx automaticamente)
+│   └── analyze.py          # Análise da proporção buddy/internacional após o split
 └── files/
-    ├── data/              # Dados de entrada (Excel)
-    └── results/           # Resultados do matching
+    ├── data/                # Dados de entrada (Excel)
+    └── results/             # Resultados do matching
 ```
 
-## 🚀 Como Usar
+## 🚀 Passo a Passo Completo
 
-### 1. Preparar os Dados
+### 0. Organizar os arquivos de entrada
 
-Primeiro, separe os dados por gênero:
+Coloque o `.xlsx` exportado do formulário em uma pasta, por exemplo `files/data/26.1/`, e crie um arquivo `women_names.txt` na mesma pasta com um nome feminino por linha (todos os outros nomes serão tratados como masculinos):
+
+```
+Maria Santos
+Ana Paula
+Alaya Minet
+```
+
+### 1. (Opcional) Explorar os dados brutos
+
+Para inspecionar as colunas, valores únicos e comentários do arquivo exportado antes de processá-lo:
 
 ```bash
-python scripts/split_by_gender.py --input "./files/data/26.1/dados.xlsx" --women-file "./files/data/26.1/women_names.txt"
+python scripts/explore_data.py "./files/data/26.1" --pattern "*.xlsx" --output "./files/data/26.1/data_structure.txt"
 ```
 
-O arquivo `women_names.txt` deve conter um nome feminino por linha. Todos os outros serão considerados masculinos.
+| Argumento | Descrição | Padrão |
+|-----------|-----------|--------|
+| `data_dir` | Pasta onde está o `.xlsx` (posicional, obrigatório) | - |
+| `--pattern` | Padrão glob para localizar o arquivo | `*2026*.xlsx` |
+| `-o`, `--output` | Arquivo de saída com o resumo da estrutura | `data_structure.txt` |
 
-### 2. Executar o Matching
+### 2. Separar os dados por gênero
+
+Use o script rápido `run_split.py`, que descobre automaticamente o `.xlsx` e o `women_names.txt` dentro da pasta informada:
+
+```bash
+python scripts/run_split.py "./files/data/26.1"
+```
+
+Por padrão, o `data_split.xlsx` é salvo na mesma pasta de entrada. Para salvar em outra pasta, use `-o`/`--output-folder`:
+
+```bash
+python scripts/run_split.py "./files/data/26.1" --output-folder "./files/results/26.1"
+```
+
+| Argumento | Descrição | Padrão |
+|-----------|-----------|--------|
+| `folder` | Pasta com o `.xlsx` de entrada e o `women_names.txt` (posicional, obrigatório) | - |
+| `-o`, `--output-folder` | Pasta onde salvar `data_split.xlsx` | mesma pasta de entrada |
+
+Alternativamente, use `split_by_gender.py` para mais controle sobre os caminhos e a coluna de nomes:
+
+```bash
+python scripts/split_by_gender.py --input "./files/data/26.1/dados.xlsx" --women-file "./files/data/26.1/women_names.txt" --output "./files/data/26.1/data_split.xlsx"
+```
+
+| Argumento | Descrição | Padrão |
+|-----------|-----------|--------|
+| `--input`, `-i` | Caminho do arquivo Excel de entrada (obrigatório) | - |
+| `--women-file`, `-w` | Caminho do arquivo com nomes femininos (obrigatório) | - |
+| `--output`, `-o` | Caminho do arquivo de saída | `<input>_split.xlsx` |
+| `--name-column` | Coluna com os nomes dos participantes | `"Tell us what's you name: "` |
+| `--sheet` | Aba específica a ler do arquivo de entrada | primeira aba |
+
+### 3. (Opcional) Verificar o resultado do split
+
+Confira rapidamente as colunas e a proporção buddy/internacional do arquivo gerado:
+
+```bash
+python debug.py "./files/data/26.1/data_split.xlsx" --sheet Men
+python scripts/analyze.py "./files/data/26.1/data_split.xlsx"
+```
+
+| Script | Argumento | Descrição | Padrão |
+|--------|-----------|-----------|--------|
+| `debug.py` | `xlsx_path` | Caminho do `.xlsx` separado (posicional, obrigatório) | - |
+| `debug.py` | `--sheet` | Aba a inspecionar | `Men` |
+| `scripts/analyze.py` | `xlsx_path` | Caminho do `.xlsx` separado (posicional, obrigatório) | - |
+
+### 4. Executar o Matching
 
 Para mulheres:
 ```bash
@@ -48,7 +112,7 @@ Para homens:
 python match_improved.py --xlsx-path "./files/data/26.1/data_split.xlsx" --sheet "Men" --s h --to-excel --save-path "./files/results/26.1"
 ```
 
-### 3. Argumentos Disponíveis
+### 5. Argumentos Disponíveis (`match_improved.py`)
 
 | Argumento | Descrição | Padrão |
 |-----------|-----------|--------|
@@ -59,6 +123,8 @@ python match_improved.py --xlsx-path "./files/data/26.1/data_split.xlsx" --sheet
 | `--to-csv` | Salvar resultados em CSV | - |
 | `--save-path` | Pasta para salvar resultados | `.` |
 | `--comment-weight` | Peso para similaridade de comentários | `0.1` |
+| `--buddy-weight` | Peso para similaridade buddy-estudante | `0.7` |
+| `--student-weight` | Peso para similaridade estudante-estudante | `0.3` |
 | `--comfort-bonus` | Bônus para conforto com diferenças | `0.1` |
 | `--comfort-penalty` | Penalidade para desconforto | `0.1` |
 | `--legacy` | Usar algoritmo antigo | - |
@@ -99,18 +165,25 @@ pip install pandas scikit-learn pulp openpyxl
 ## 📝 Exemplo Completo
 
 ```bash
-# 1. Criar arquivo com nomes das mulheres
+# 0. Criar arquivo com nomes das mulheres dentro da pasta de dados
 echo "Maria Santos
 Ana Paula
-..." > women_names.txt
+..." > "./files/data/26.1/women_names.txt"
+
+# 1. (Opcional) Explorar a estrutura do arquivo bruto
+python scripts/explore_data.py "./files/data/26.1" --pattern "*.xlsx"
 
 # 2. Separar dados por gênero
-python scripts/run_split.py
+python scripts/run_split.py "./files/data/26.1" --output-folder "./files/data/26.1"
 
-# 3. Executar matching para mulheres
+# 3. (Opcional) Verificar o resultado do split
+python debug.py "./files/data/26.1/data_split.xlsx"
+python scripts/analyze.py "./files/data/26.1/data_split.xlsx"
+
+# 4. Executar matching para mulheres
 python match_improved.py --xlsx-path "./files/data/26.1/data_split.xlsx" --sheet "Women" --s m --to-excel --save-path "./files/results/26.1"
 
-# 4. Executar matching para homens
+# 5. Executar matching para homens
 python match_improved.py --xlsx-path "./files/data/26.1/data_split.xlsx" --sheet "Men" --s h --to-excel --save-path "./files/results/26.1"
 ```
 
@@ -119,3 +192,4 @@ python match_improved.py --xlsx-path "./files/data/26.1/data_split.xlsx" --sheet
 - A coluna de nomes deve ser `"Tell us what's you name: "` (ou será detectada automaticamente)
 - A coluna de tipo deve conter `"Brazilian student (Buddy)"` ou `"International student (Incoming)"`
 - Comentários triviais (`.`, `/`, emojis) são ignorados no cálculo de similaridade
+- Todos os scripts recebem caminhos de arquivo/pasta via linha de comando — nenhum caminho fica fixo no código, então o projeto funciona em qualquer máquina ou pasta de dados

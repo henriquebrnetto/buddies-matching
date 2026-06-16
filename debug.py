@@ -1,7 +1,13 @@
 """Debug script to understand data structure"""
+import argparse
 import pandas as pd
 
-df = pd.read_excel('files/data/26.1/data_split.xlsx', sheet_name='Men')
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('xlsx_path', help='Path to the split .xlsx file')
+parser.add_argument('--sheet', default='Men', help='Sheet name to inspect (default: Men)')
+args = parser.parse_args()
+
+df = pd.read_excel(args.xlsx_path, sheet_name=args.sheet)
 print("=== Column structure ===")
 for i, col in enumerate(df.columns):
     print(f"{i}: {repr(col)}")

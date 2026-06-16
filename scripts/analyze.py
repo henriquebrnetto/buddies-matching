@@ -1,7 +1,12 @@
 """Quick analysis of buddy/international split."""
+import argparse
 import pandas as pd
 
-df = pd.read_excel('files/data/26.1/data_split.xlsx', sheet_name=None)
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('xlsx_path', help='Path to the split .xlsx file')
+args = parser.parse_args()
+
+df = pd.read_excel(args.xlsx_path, sheet_name=None)
 
 # Find the "I am a" column (may have special chars)
 def get_type_col(sheet):
