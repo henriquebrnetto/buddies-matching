@@ -66,9 +66,13 @@ def split_by_gender(
         df = pd.read_excel(input_file, sheet_name=sheet_name)
     else:
         df = pd.read_excel(input_file)
-    
+
     print(f"Loaded {len(df)} rows from {input_file}")
-    
+
+    # Drop fully empty rows
+    df = df.dropna(how='all')
+    print(f"Rows after dropping empty rows: {len(df)}")
+
     # Find the name column
     if name_column not in df.columns:
         possible_cols = [c for c in df.columns if 'name' in c.lower()]
@@ -77,7 +81,22 @@ def split_by_gender(
             print(f"Using column '{name_column}' for names")
         else:
             raise ValueError(f"Name column '{name_column}' not found. Available: {list(df.columns)}")
-    
+
+    # Drop rows without a name (e.g. fully blank responses missed by dropna(how='all'))
+    df = df[df[name_column].notna() & (df[name_column].astype(str).str.strip() != '')]
+    print(f"Rows after dropping rows without a name: {len(df)}")
+
+    # Handle duplicate names: keep the most recent entry
+    time_col = 'Hora de conclusão'
+    if time_col in df.columns:
+        df = df.sort_values(time_col)
+    name_key = df[name_column].astype(str).str.strip().str.lower()
+    before = len(df)
+    df = df[~name_key.duplicated(keep='last')]
+    duplicates_removed = before - len(df)
+    if duplicates_removed:
+        print(f"Removed {duplicates_removed} duplicate entries (kept most recent per name)")
+
     # Split based on women's names
     is_woman_mask = df[name_column].apply(lambda x: is_woman(x, women_names))
     

@@ -18,6 +18,10 @@ print(f"Reading: {input_file}")
 df = pd.read_excel(input_file)
 print(f"Total rows: {len(df)}")
 
+# Drop fully empty rows
+df = df.dropna(how='all')
+print(f"Rows after dropping empty rows: {len(df)}")
+
 # Load women's names
 women_names_file = os.path.join(args.folder, 'women_names.txt')
 with open(women_names_file, 'r', encoding='utf-8') as f:
@@ -29,6 +33,21 @@ name_col = "Tell us what's you name: "
 if name_col not in df.columns:
     name_col = [c for c in df.columns if 'name' in c.lower()][0]
 print(f"Using name column: {name_col}")
+
+# Drop rows without a name (e.g. fully blank responses missed by dropna(how='all'))
+df = df[df[name_col].notna() & (df[name_col].astype(str).str.strip() != '')]
+print(f"Rows after dropping rows without a name: {len(df)}")
+
+# Handle duplicate names: keep the most recent entry
+time_col = 'Hora de conclusão'
+if time_col in df.columns:
+    df = df.sort_values(time_col)
+name_key = df[name_col].astype(str).str.strip().str.lower()
+before = len(df)
+df = df[~name_key.duplicated(keep='last')]
+duplicates_removed = before - len(df)
+if duplicates_removed:
+    print(f"Removed {duplicates_removed} duplicate entries (kept most recent per name)")
 
 # Split
 def is_woman(name):
